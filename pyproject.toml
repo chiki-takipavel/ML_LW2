@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "lw2"
+version = "0.1.0"
+description = ""
+authors = ["Pavel Miskevich <chiki-takipavel@mail.ru>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+opencv-python = "^4.6.0.66"
+pandas = "^1.5.2"
+matplotlib = "^3.6.2"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
