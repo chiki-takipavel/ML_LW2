@@ -14,11 +14,11 @@ DATA_COLUMN_NAME = 'data'
 LABELS_COLUMN_NAME = 'labels'
 HASHED_DATA_COLUMN_NAME = 'data_bytes'
 BALANCE_BORDER = 0.85
-TRAIN_SIZE = 150000
+TRAIN_SIZE = 200000
 VALIDATION_SIZE = 10000
 TEST_SIZE = 19000
 BATCH_SIZE = 48
-EPOCHS = 15
+EPOCHS = 30
 EPOCHS_RANGE = range(EPOCHS)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -180,7 +180,7 @@ def get_neural_network_statistics(train_dataset, validation_dataset, test_datase
         tf.keras.layers.Dense(512, activation='relu'),
         tf.keras.layers.Dense(256, activation='relu'),
         tf.keras.layers.Dense(128, activation='relu'),
-        tf.keras.layers.Dense(CLASSES_COUNT, activation='sigmoid')
+        tf.keras.layers.Dense(CLASSES_COUNT)
     ])
 
     regularized_model = tf.keras.Sequential([
@@ -192,7 +192,7 @@ def get_neural_network_statistics(train_dataset, validation_dataset, test_datase
         tf.keras.layers.Dense(256, activation='relu', kernel_regularizer=tf.keras.regularizers.L2(0.001)),
         tf.keras.layers.Dense(128, activation='relu', kernel_regularizer=tf.keras.regularizers.L2(0.001)),
         tf.keras.layers.Dropout(0.2),
-        tf.keras.layers.Dense(CLASSES_COUNT, activation='sigmoid')
+        tf.keras.layers.Dense(CLASSES_COUNT)
     ])
 
     dynamic_model = tf.keras.Sequential([
@@ -204,7 +204,7 @@ def get_neural_network_statistics(train_dataset, validation_dataset, test_datase
         tf.keras.layers.Dense(256, activation='relu', kernel_regularizer=tf.keras.regularizers.L2(0.001)),
         tf.keras.layers.Dense(128, activation='relu', kernel_regularizer=tf.keras.regularizers.L2(0.001)),
         tf.keras.layers.Dropout(0.2),
-        tf.keras.layers.Dense(CLASSES_COUNT, activation='sigmoid')
+        tf.keras.layers.Dense(CLASSES_COUNT)
     ])
 
     dynamic_model_stats = get_statistics(
