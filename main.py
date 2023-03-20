@@ -142,7 +142,7 @@ def get_statistics(model, train_dataset, validation_dataset, test_dataset, with_
 
     model.compile(
         optimizer=optimizer,
-        loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+        loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=False),
         metrics=['accuracy'])
 
     model_history = model.fit(
@@ -174,49 +174,53 @@ def get_neural_network_statistics(train_dataset, validation_dataset, test_datase
     test_dataset = test_dataset.cache().prefetch(buffer_size=tf.data.AUTOTUNE)
 
     simple_model = tf.keras.Sequential([
-        tf.keras.layers.Rescaling(1 / 255.),
-        tf.keras.layers.Flatten(),
-        tf.keras.layers.Dense(128, activation='relu'),
+        tf.keras.layers.Rescaling(1. / 255),
+        tf.keras.layers.Flatten(input_shape=(28, 28, 1)),
         tf.keras.layers.Dense(512, activation='relu'),
         tf.keras.layers.Dense(256, activation='relu'),
         tf.keras.layers.Dense(128, activation='relu'),
-        tf.keras.layers.Dense(CLASSES_COUNT)
+        tf.keras.layers.Dense(64, activation='relu'),
+        tf.keras.layers.Dense(CLASSES_COUNT, activation='softmax')
     ])
 
     regularized_model = tf.keras.Sequential([
-        tf.keras.layers.Rescaling(1 / 255.),
-        tf.keras.layers.Flatten(),
-        tf.keras.layers.Dense(128, activation='relu', kernel_regularizer=tf.keras.regularizers.L2(0.001)),
+        tf.keras.layers.Rescaling(1. / 255),
+        tf.keras.layers.Flatten(input_shape=(28, 28, 1)),
         tf.keras.layers.Dense(512, activation='relu', kernel_regularizer=tf.keras.regularizers.L2(0.001)),
-        tf.keras.layers.Dropout(0.3),
+        tf.keras.layers.Dropout(0.5),
         tf.keras.layers.Dense(256, activation='relu', kernel_regularizer=tf.keras.regularizers.L2(0.001)),
+        tf.keras.layers.Dropout(0.5),
         tf.keras.layers.Dense(128, activation='relu', kernel_regularizer=tf.keras.regularizers.L2(0.001)),
-        tf.keras.layers.Dropout(0.2),
-        tf.keras.layers.Dense(CLASSES_COUNT)
+        tf.keras.layers.Dropout(0.5),
+        tf.keras.layers.Dense(64, activation='relu', kernel_regularizer=tf.keras.regularizers.L2(0.001)),
+        tf.keras.layers.Dropout(0.5),
+        tf.keras.layers.Dense(CLASSES_COUNT, activation='softmax')
     ])
 
     dynamic_model = tf.keras.Sequential([
-        tf.keras.layers.Rescaling(1 / 255.),
-        tf.keras.layers.Flatten(),
-        tf.keras.layers.Dense(128, activation='relu', kernel_regularizer=tf.keras.regularizers.L2(0.001)),
+        tf.keras.layers.Rescaling(1. / 255),
+        tf.keras.layers.Flatten(input_shape=(28, 28, 1)),
         tf.keras.layers.Dense(512, activation='relu', kernel_regularizer=tf.keras.regularizers.L2(0.001)),
-        tf.keras.layers.Dropout(0.3),
+        tf.keras.layers.Dropout(0.5),
         tf.keras.layers.Dense(256, activation='relu', kernel_regularizer=tf.keras.regularizers.L2(0.001)),
+        tf.keras.layers.Dropout(0.5),
         tf.keras.layers.Dense(128, activation='relu', kernel_regularizer=tf.keras.regularizers.L2(0.001)),
-        tf.keras.layers.Dropout(0.2),
-        tf.keras.layers.Dense(CLASSES_COUNT)
+        tf.keras.layers.Dropout(0.5),
+        tf.keras.layers.Dense(64, activation='relu', kernel_regularizer=tf.keras.regularizers.L2(0.001)),
+        tf.keras.layers.Dropout(0.5),
+        tf.keras.layers.Dense(CLASSES_COUNT, activation='softmax')
     ])
 
-    dynamic_model_stats = get_statistics(
-        dynamic_model, train_dataset, validation_dataset, test_dataset, with_optimization=True
+    simple_model_stats = get_statistics(
+        simple_model, train_dataset, validation_dataset, test_dataset
     )
 
     regularized_model_stats = get_statistics(
         regularized_model, train_dataset, validation_dataset, test_dataset
     )
 
-    simple_model_stats = get_statistics(
-        simple_model, train_dataset, validation_dataset, test_dataset
+    dynamic_model_stats = get_statistics(
+        dynamic_model, train_dataset, validation_dataset, test_dataset, with_optimization=True
     )
 
     losses.extend((simple_model_stats[0], regularized_model_stats[0], dynamic_model_stats[0]))
