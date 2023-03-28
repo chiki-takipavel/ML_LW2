@@ -7,7 +7,7 @@ import pandas as pd
 import tensorflow as tf
 from matplotlib import pyplot as plt
 
-DATASET_FOLDER = r'C:/Users/chiki/Downloads/notMNIST_large'
+DATASET_FOLDER = r'../Dataset'
 CLASSES = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']
 CLASSES_COUNT = len(CLASSES)
 DATA_COLUMN_NAME = 'data'
@@ -17,8 +17,12 @@ BALANCE_BORDER = 0.85
 TRAIN_SIZE = 200000
 VALIDATION_SIZE = 10000
 TEST_SIZE = 19000
-BATCH_SIZE = 48
-EPOCHS = 30
+BATCH_SIZE = 128
+INITIAL_LEARNING_RATE = 0.01
+MIN_LEARNING_RATE = 1e-6
+DECAY_STEPS = 12000
+DECAY_RATE = 0.8
+EPOCHS = 50
 EPOCHS_RANGE = range(EPOCHS)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -135,13 +139,27 @@ def split_dataset_into_subsamples(data_frame):
 
 
 def get_statistics(model, train_dataset, validation_dataset, test_dataset, with_optimization=False):
+    learning_rate = INITIAL_LEARNING_RATE
+    callbacks = None
     if with_optimization:
-        optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
-    else:
-        optimizer = tf.keras.optimizers.experimental.SGD()
+        learning_rate = tf.keras.optimizers.schedules.ExponentialDecay(
+            initial_learning_rate=INITIAL_LEARNING_RATE,
+            decay_steps=DECAY_STEPS,
+            decay_rate=DECAY_RATE,
+            staircase=True
+        )
+
+        reduce_lr = tf.keras.callbacks.ReduceLROnPlateau(
+            monitor='val_loss',
+            factor=0.1,
+            patience=6,
+            verbose=1,
+            min_lr=MIN_LEARNING_RATE
+        )
+        callbacks = [reduce_lr]
 
     model.compile(
-        optimizer=optimizer,
+        optimizer=tf.keras.optimizers.experimental.SGD(learning_rate=learning_rate),
         loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=False),
         metrics=['accuracy'])
 
@@ -149,6 +167,7 @@ def get_statistics(model, train_dataset, validation_dataset, test_dataset, with_
         x=train_dataset,
         validation_data=validation_dataset,
         epochs=EPOCHS,
+        callbacks=callbacks,
         verbose=1
     )
 
@@ -187,13 +206,13 @@ def get_neural_network_statistics(train_dataset, validation_dataset, test_datase
         tf.keras.layers.Rescaling(1. / 255),
         tf.keras.layers.Flatten(input_shape=(28, 28, 1)),
         tf.keras.layers.Dense(512, activation='relu', kernel_regularizer=tf.keras.regularizers.L2(0.001)),
-        tf.keras.layers.Dropout(0.5),
+        tf.keras.layers.Dropout(0.45),
         tf.keras.layers.Dense(256, activation='relu', kernel_regularizer=tf.keras.regularizers.L2(0.001)),
-        tf.keras.layers.Dropout(0.5),
+        tf.keras.layers.Dropout(0.45),
         tf.keras.layers.Dense(128, activation='relu', kernel_regularizer=tf.keras.regularizers.L2(0.001)),
-        tf.keras.layers.Dropout(0.5),
+        tf.keras.layers.Dropout(0.45),
         tf.keras.layers.Dense(64, activation='relu', kernel_regularizer=tf.keras.regularizers.L2(0.001)),
-        tf.keras.layers.Dropout(0.5),
+        tf.keras.layers.Dropout(0.45),
         tf.keras.layers.Dense(CLASSES_COUNT, activation='softmax')
     ])
 
@@ -201,13 +220,13 @@ def get_neural_network_statistics(train_dataset, validation_dataset, test_datase
         tf.keras.layers.Rescaling(1. / 255),
         tf.keras.layers.Flatten(input_shape=(28, 28, 1)),
         tf.keras.layers.Dense(512, activation='relu', kernel_regularizer=tf.keras.regularizers.L2(0.001)),
-        tf.keras.layers.Dropout(0.5),
+        tf.keras.layers.Dropout(0.45),
         tf.keras.layers.Dense(256, activation='relu', kernel_regularizer=tf.keras.regularizers.L2(0.001)),
-        tf.keras.layers.Dropout(0.5),
+        tf.keras.layers.Dropout(0.45),
         tf.keras.layers.Dense(128, activation='relu', kernel_regularizer=tf.keras.regularizers.L2(0.001)),
-        tf.keras.layers.Dropout(0.5),
+        tf.keras.layers.Dropout(0.45),
         tf.keras.layers.Dense(64, activation='relu', kernel_regularizer=tf.keras.regularizers.L2(0.001)),
-        tf.keras.layers.Dropout(0.5),
+        tf.keras.layers.Dropout(0.45),
         tf.keras.layers.Dense(CLASSES_COUNT, activation='softmax')
     ])
 
@@ -232,27 +251,27 @@ def get_neural_network_statistics(train_dataset, validation_dataset, test_datase
 
 
 def show_result_plot(losses, accuracies, validation_losses, validation_accuracies):
-    plt.figure(figsize=(14, 10))
+    plt.figure(figsize=(20, 14))
 
     plt.subplot(1, 2, 1)
     plt.title('Training and Validation Loss')
-    plt.plot(EPOCHS_RANGE, losses[0], label='Train Smpl Loss')
-    plt.plot(EPOCHS_RANGE, validation_losses[0], label='Val Smpl Loss', linestyle='dashed')
-    plt.plot(EPOCHS_RANGE, losses[1], label='Train Reg Loss')
-    plt.plot(EPOCHS_RANGE, validation_losses[1], label='Val Reg Loss', linestyle='dashed')
-    plt.plot(EPOCHS_RANGE, losses[2], label='Train Dyn Loss')
-    plt.plot(EPOCHS_RANGE, validation_losses[2], label='Val Dyn Loss', linestyle='dashed')
+    plt.plot(EPOCHS_RANGE, losses[0], label='Train Simple Loss')
+    plt.plot(EPOCHS_RANGE, validation_losses[0], label='Validation Simple Loss', linestyle='dashed')
+    plt.plot(EPOCHS_RANGE, losses[1], label='Train Regularized Loss')
+    plt.plot(EPOCHS_RANGE, validation_losses[1], label='Validation Regularized Loss', linestyle='dashed')
+    plt.plot(EPOCHS_RANGE, losses[2], label='Train Dynamic Loss')
+    plt.plot(EPOCHS_RANGE, validation_losses[2], label='Validation Dynamic Loss', linestyle='dashed')
     plt.legend(loc='upper right')
 
     plt.subplot(1, 2, 2)
     plt.title('Training and Validation Accuracy')
-    plt.plot(EPOCHS_RANGE, accuracies[0], label='Train Smpl Acc')
-    plt.plot(EPOCHS_RANGE, validation_accuracies[0], label='Val Smpl Acc', linestyle='dashed')
-    plt.plot(EPOCHS_RANGE, accuracies[1], label='Train Reg Acc')
-    plt.plot(EPOCHS_RANGE, validation_accuracies[1], label='Val Reg Acc', linestyle='dashed')
-    plt.plot(EPOCHS_RANGE, accuracies[2], label='Train Dyn Acc')
-    plt.plot(EPOCHS_RANGE, validation_accuracies[2], label='Val Dyn Acc', linestyle='dashed')
-    plt.legend(loc='upper right')
+    plt.plot(EPOCHS_RANGE, accuracies[0], label='Train Simple Accuracy')
+    plt.plot(EPOCHS_RANGE, validation_accuracies[0], label='Validation Simple Accuracy', linestyle='dashed')
+    plt.plot(EPOCHS_RANGE, accuracies[1], label='Train Regularized Accuracy')
+    plt.plot(EPOCHS_RANGE, validation_accuracies[1], label='Validation Regularized Accuracy', linestyle='dashed')
+    plt.plot(EPOCHS_RANGE, accuracies[2], label='Train Dynamic Accuracy')
+    plt.plot(EPOCHS_RANGE, validation_accuracies[2], label='Validation Dynamic Accuracy', linestyle='dashed')
+    plt.legend(loc='lower right')
 
     plt.show()
     logging.info("Plot shown")
